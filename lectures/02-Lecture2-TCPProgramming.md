@@ -2,22 +2,24 @@
 
 ## Table of Contents
 
-1. [Objectives](#Objectives)
-2. [Lecture](#Lecture)
-   1. [Client-Server Programming](#ClientServerProgramming)
-   1. [The TCP Protocol](#TCPProtocol)
-   1. [The Socket API](#SocketAPI)
-   1. [So… What Do Servers and Clients Do With the Socket API?](#UsingTheSocketApi)
-   1. [Handling Concurrency in TCP Server](#HandlingConcurrency)
-      1. [Single Process, Single-Threaded, Blocking Servers](#SingleProcessSingleThreadedBlocking)
-      1. [Multi Process, Single-Threaded, Blocking Servers](#MultiProcessSingleThreadedBlocking)
-      1. [Single Process, Multi-Threaded, Blocking Servers](#SingleProcessMultiThreadedBlocking)
-      1. [Single Process, Single-Threaded, Non-Blocking Servers (multiplexing)](#SingleProcessSingleThreadedNonBlockingMultiplexing)
-      1. [Single Process, Single-Threaded, Non-Blocking Servers (asynchronous programming)](#SingleProcessSingleThreadedNonBlockingAsynchronous)
-3. [Resources](#Resources)
-   1. [MUST read](#ResourcesMustRead)
-   2. [Additional Resources](#ResourcesAdditional)
-4. [What Should I Know For The Test And The Exam?](#Exam)
+- [Lecture 2: TCP Programming](#lecture-2-tcp-programming)
+	- [Table of Contents](#table-of-contents)
+	- [<a name="Objectives"></a>Objectives](#objectives)
+	- [<a name="Lecture"></a>Lecture](#lecture)
+		- [<a name="ClientServerProgramming"></a>1. Client-Server Programming](#1-client-server-programming)
+		- [<a name="TCPProtocol"></a>2. The TCP Protocol](#2-the-tcp-protocol)
+		- [<a name="SocketAPI"></a>3. The Socket API](#3-the-socket-api)
+		- [<a name="UsingTheSocketApi"></a>4. So… What Do Servers and Clients Do With the Socket API?](#4-so-what-do-servers-and-clients-do-with-the-socket-api)
+		- [<a name="HandlingConcurrency"></a>5. Handling Concurrency in TCP Servers](#5-handling-concurrency-in-tcp-servers)
+			- [<a name="SingleProcessSingleThreadedBlocking"></a>5.1. Single Process, Single-Threaded, Blocking Servers](#51-single-process-single-threaded-blocking-servers)
+			- [<a name="MultiProcessSingleThreadedBlocking"></a>5.2. Multi Process, Single-Threaded, Blocking Servers](#52-multi-process-single-threaded-blocking-servers)
+			- [<a name="SingleProcessMultiThreadedBlocking"></a>5.3. Single Process, Multi-Threaded, Blocking Servers](#53-single-process-multi-threaded-blocking-servers)
+			- [<a name="SingleProcessSingleThreadedNonBlockingMultiplexing"></a>5.4. Single Process, Single-Threaded, Non-Blocking Servers (multiplexing)](#54-single-process-single-threaded-non-blocking-servers-multiplexing)
+			- [<a name="SingleProcessSingleThreadedNonBlockingAsynchronous"></a>5.5. Single Process, Single-Threaded, Non-Blocking Servers (asynchronous programming)](#55-single-process-single-threaded-non-blocking-servers-asynchronous-programming)
+	- [<a name="Resources"></a>Resources</a>](#resourcesa)
+		- [<a name="ResourcesMustRead"></a>MUST read](#must-read)
+		- [<a name="ResourcesAdditional"></a>Additional resources](#additional-resources)
+	- [<a name="Exam"></a>What Should I Know For The Test and The Exam?](#what-should-i-know-for-the-test-and-the-exam)
 
 
 ## <a name="Objectives"></a>Objectives
@@ -124,7 +126,7 @@ The details of the syntax depend on the programming language used to implement t
 
 The following code snippets show how the previous pseudo code can be implemented in Java.
 
-```
+``` java
 // Server (exception handling removed for the sake of brevity)
 
 boolean serverShutdownRequested = false;
@@ -146,7 +148,7 @@ while (!serverShutdownRequested) {
 receptionistSocket.close();
 ```
 
-```
+``` java
 // Client (again, exception handling has been removed)
 
 Socket socket = new Socket("www.heig-vd.ch", 80);
@@ -184,7 +186,7 @@ Let us compare 5 alternatives:
 
 This is **the simplest type of server that you can write**, but it as a limitation that makes it almost unviable. Indeed, this type of server is able to **talk to only one client at the time**. For some stateless protocols (where the client and the server communicate during a very short period) and when the traffic is very low, it might be an option, but frankly… Consider the following Java code:
 
-```
+``` Java
 try {
 	serverSocket = new ServerSocket(PORT);
 } catch (IOException ex) {
@@ -225,7 +227,7 @@ while (true) {
 ```
 The following line, which is used to set the socket in listening mode and to accept connection requests from clients, is very important: 
 
-```
+``` Java
         clientSocket = serverSocket.accept();
 ```
 **You have to understand that `accept()` is a *blocking* call**. **This means that the execution of the current thread will suspend until a client arrives**. Nothing else will happen. So here is what happens when you execute the server. It will bind a socket to a port, wait for a client to arrive, serve that client (which might take a while, depending on the application protocol…) and *only then* be ready to serv the next client. In other words, clients are served in pure sequence. *That sounds a bit like a Cronut queue…*
@@ -240,7 +242,7 @@ The model works as follows: the server starts in a first process, which binds a 
 
 The following code snippet, which is part of the great [Beej's Guide to Network Programming](http://www.beej.us/guide/bgnet/output/html/multipage/index.html), shows how this can be implemented in C (the complete code is available [here](http://www.beej.us/guide/bgnet/output/html/multipage/clientserver.html#simpleserver)):
 
-```
+``` C
 printf("server: waiting for connections...\n");
 
 while(1) {  // main accept() loop
@@ -284,7 +286,7 @@ The following Java code illustrates the idea. Here are the key points about the 
 * The responsibility of the `ServantWorker` class is to take care of a particular client. It provides a `run()` method that executes on its own thread. This method has access to the input and output streams connected to the socket and can use them to receive bytes from, respectively send bytes to the client.
 
 
-```
+``` Java
 public class MultiThreadedServer {
 
 	final static Logger LOG = Logger.getLogger(MultiThreadedServer.class.getName());
@@ -409,7 +411,7 @@ Before we get to the technical details, let us consider a real world analogy aga
 
 In technical terms, doing asynchronous IO programming consists of using non-blocking IOs (hence of setting sockets in non-blocking state) in combination with an event-based approach. This is possible in various programming environments and has become very popular. It is one of the features of the *Node.js platform*, which applies the asynchronous pattern across the board. It is also one aspect of the [*reactive programming*](http://www.reactivemanifesto.org/#event-driven) approach. To illustrate what that means, consider the following code:
 
-```
+``` js
 // This is an example for a simple echo server implemented in Node.js. It
 // demonstrates how to write single-threaded, asynchronous code that allows
 // one server to talk to several clients concurrently. 
